@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>JSmol -- Jmol/HTML5 Demo</title>
+<script type="text/javascript" src="JSmol.min.js"></script>
+
+<script type="text/javascript">
+
+Jmol._isAsync = false;
+
+// last update 2/18/2014 2:10:06 PM
+
+var jmolApplet0; // set up in HTML table, below
+
+// logic is set by indicating order of USE -- default is HTML5 for this test page, though
+
+var s = document.location.search;
+
+// Developers: The _debugCode flag is checked in j2s/core/core.z.js, 
+// and, if TRUE, skips loading the core methods, forcing those
+// to be read from their individual directories. Set this
+// true if you want to do some code debugging by inserting
+// System.out.println, document.title, or alert commands
+// anywhere in the Java or Jmol code.
+
+Jmol._debugCode = (s.indexOf("debugcode") >= 0);
+
+jmol_isReady = function(applet) {
+	document.title = ("Amino Acid Collision Viewer")
+	Jmol._getElement(applet, "appletdiv").style.border="1px solid blue"
+}		
+
+var Info = {
+	width: 800,
+	height: 600,
+	debug: false,
+	color: "0xFFFFFF",
+	//addSelectionOptions: true,
+	use: "HTML5",   // JAVA HTML5 WEBGL are all options
+	j2sPath: "./j2s", // this needs to point to where the j2s directory is.
+	jarPath: "./java",// this needs to point to where the java directory is.
+	jarFile: "JmolAppletSigned.jar",
+	isSigned: true,
+	script: "set zoomlarge false;set antialiasDisplay;load data/ala.pdb;set spin on;",
+	serverURL: "https://chemapps.stolaf.edu/jmol/jsmol/php/jsmol.php",
+	readyFunction: jmol_isReady,
+	disableJ2SLoadMonitor: true,
+  disableInitialConsole: true,
+  allowJavaScript: true
+	//defaultModel: "$dopamine",
+	//console: "none", // default will be jmolApplet0_infodiv, but you can designate another div here or "none"
+}
+
+// -----  Molecule manipulation code ----- //
+
+// Global variables, initialized with default molecule
+var aminoAcid = "ala";
+
+// Phi torsion angle
+var phi = 0;
+
+// Psi torsion angle
+var psi = 0;
+
+// plane flags
+var plane_flag = false;
+
+// Load molecule
+function load_molecule() {
+  aminoAcid = document.getElementById("menu").value;
+  var filename = aminoAcid;
+  if (aminoAcid == "ala-gly") {
+    filename = filename + ".mol";
+  } else {
+    filename = filename + ".pdb";
+  }
+  // JSmol load
+  Jmol.script(jmolApplet0, '!quit;load ./data/' + filename);
+  phi = 0;
+  document.getElementById("phi").innerText = readphi();
+  psi = 0;
+  document.getElementById("psi").innerText = readphi();
+  return;
+}
+
+function update_clashes() {
+  // To return the number of atoms in clash, use this script format:
+  // x = contact({atomset1} {atomset2});set background [x*90, 0, 0]
+  Jmol.script(jmolApplet0, 'contact delete;contact {oxygen or carbon or nitrogen} {oxygen or carbon or nitrogen};')
+  
+  return;
+}
+
+function phi_rotate_plus() { 
+  if (aminoAcid == "ala") {
+    // Alanine
+    Jmol.script(jmolApplet0, 'rotate MOLECULAR BRANCH (atomno = 7) (atomno = 1) 10 30');
+  } else if (aminoAcid == "ala-gly") {
+    // ALA-GLY
+    Jmol.script(jmolApplet0, 'rotate MOLECULAR BRANCH (atomno = 4) (atomno = 9) 10 30');
+  }
+  phi = phi + 10;
+  phi = normalize(phi);
+  document.getElementById("phi").innerText = readphi();
+  return;
+}
+
+function phi_rotate_minus() {
+  if (aminoAcid == "ala") {
+    // Alanine
+    Jmol.script(jmolApplet0, 'rotate MOLECULAR BRANCH (atomno = 7) (atomno = 1) -10 -30');
+  } else if (aminoAcid == "ala-gly") {
+    // ALA-GLY
+    Jmol.script(jmolApplet0, 'rotate MOLECULAR BRANCH (atomno = 4) (atomno = 9) -10 -30');
+  }
+  phi = phi - 10;
+  phi = normalize(phi);
+  document.getElementById("phi").innerText = readphi();
+  return;
+}
+
+function psi_rotate_plus() {
+  if (aminoAcid == "ala") {
+    // ALANINE
+    Jmol.script(jmolApplet0, 'rotate MOLECULAR BRANCH (atomno = 7) (atomno = 5) 10 30');
+  } else if (aminoAcid == "ala-gly") {
+    // ALA-GLY
+    Jmol.script(jmolApplet0, 'rotate MOLECULAR BRANCH (atomno = 4) (atomno = 7) 10 30');
+  }
+  psi = psi + 10;
+  psi = normalize(psi);
+  document.getElementById("psi").innerText = readpsi();
+  return;
+}
+
+function psi_rotate_minus() {
+  if (aminoAcid == "ala") {
+    // ALANINE
+    Jmol.script(jmolApplet0, 'rotate MOLECULAR BRANCH (atomno = 7) (atomno = 5) -10 -30');
+  } else if (aminoAcid == "ala-gly") {
+    // ALA-GLY
+    Jmol.script(jmolApplet0, 'rotate MOLECULAR BRANCH (atomno = 4) (atomno = 7) -10 -30');
+  }
+  psi = psi - 10;
+  psi = normalize(psi);
+  document.getElementById("psi").innerText = readpsi();
+  return;
+}
+
+function update_psi_text() {
+  document.getElementById("psi").value = readpsi();
+}
+
+function update_phi_text() {
+  document.getElementById("phi").value = readphi();
+}
+
+function normalize(angle) {
+  let normalized = angle;
+  if (normalized <= -179)
+    normalized += 360;
+  if (normalized > 180)
+    normalized -= 360;
+  return normalized;
+}
+
+function readpsi() {
+  return psi.toString();
+}
+
+function readphi(){
+  return phi.toString();
+}
+
+$(document).ready(function() {
+  $("#appdiv").html(Jmol.getAppletHtml("jmolApplet0", Info))
+})
+
+var lastPrompt=0;
+
+
+
+
+</script>
+</head>
+<body>
+
+   
+
+<center><font size="6"> Amino Acid Collision Viewer with live Ramachandran plot. </font></center>
+<center> <div id="appdiv"></div> </center>
+<center>
+    <h2 style = "color : black;">Amino Acid:</h2>
+    <select id="menu">
+      <option value = "ala">Alanine (ALA)</option> 
+      <option value = "ala-gly">Alanine-Glycine (ALA-GLY)</option>
+    </select>
+    <button onclick="load_molecule();">Load</button>
+
+
+    <h2 style ="color : black;">Phi Rotation:</h2>
+    <button onclick="phi_rotate_plus();update_clashes();">+ 10</button>
+    <button onclick="phi_rotate_minus();update_clashes();">- 10</button>
+    <p> Current degree : </p> <p id ="phi">0</p>
+     
+      
+    
+    <h2 style ="color : black;">Psi Rotation: </h2>
+    <button onclick="psi_rotate_plus();update_clashes();">+ 10</button>
+    <button onclick="psi_rotate_minus();update_clashes();">- 10</button>
+    <p> Current degree : </p> <p id="psi">0</p>
+    
+</center>
+
+
+</body>
+</html>
