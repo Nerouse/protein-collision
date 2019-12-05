@@ -1,6 +1,76 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <style>
+      body {
+      }
+      
+      div {
+	  display: inline-block;
+	  justify-content: space-between;
+      }
+      
+      .tab {
+	  overflow: hidden;
+	  border: 1px solid #ccc;
+	  background-color: #f1f1f1;
+      }
+
+      .tab button {
+	  background-color: inherit;
+	  float: left;
+	  border: none;
+	  outline: none;
+	  cursor: pointer;
+	  padding: 14px 16px;
+	  transition: 0.3s;
+	  font-size: 17px;
+      }
+
+      .tab button:hover {
+	  background-color: #ddd;
+      }
+
+      .tab button.active {
+	  background-color: #ccc;
+      }
+
+      .tabcontent {
+	  display: none;
+	  padding: 6px 12px;
+	  border: 1px solid #ccc;
+	  border-top: none;
+      }
+      div.legend {
+    	position: relative;
+    	width: 420px;
+		height: 180px;
+		border: 1px solid #060606;
+    }
+
+     div.plotBox {
+		  position: relative;
+		  width: 420px;
+		  height: 450px;
+	} 
+
+     div.LabelPhi {
+		  position: absolute;
+		  bottom: 0px;
+  		  left: 170px;
+		width: 50px;
+  		height: 25px;
+	}
+
+	div.LabelPsi {
+		  position: absolute;
+		  bottom: 200px;
+  		  left: 0px;
+		width: 1px;
+  		height: 25px;
+	}
+    </style>
+
     <meta charset="utf-8">
     <title>JSmol -- Jmol/HTML5 Demo</title>
     <script type="text/javascript" src="JSmol.min.js"></script>
@@ -32,8 +102,8 @@
       }		
 
       var Info = {
-	  width: 360,
-	  height: 360,
+	  width: 800,
+	  height: 600,
 	  debug: false,
 	  color: "0xFFFFFF",
 	  //addSelectionOptions: true,
@@ -61,7 +131,7 @@
       var phi = 0;
 
       // Psi torsion angle
-      var psi = 0;
+      var psi = -90;
 
       // plane flags
       var plane_flag = false;
@@ -79,8 +149,14 @@
 	  Jmol.script(jmolApplet0, '!quit;load ./data/' + filename);
 	  phi = 0;
 	  document.getElementById("phi").innerText = readphi();
-	  psi = 0;
+
+	  if (aminoAcid == "ala") {
+	      psi = -90;
+	  } else {
+	      psi = 0;
+	  }
 	  document.getElementById("psi").innerText = readphi();
+
 	  load_rama();
 	  return;
       }
@@ -95,10 +171,42 @@
 	  background.src = "https://raw.githubusercontent.com/earacena/protein-collision-viewer/master/data/" + filename;
 	  background.onload = function() {
 	      context.drawImage(background, 0, 0);
+	      place_axis();
+	      update_rama();
+	      
 	  }
 	  return; 
       }
 
+      function place_axis() {
+	  var canvas = document.getElementById("ramacanvas");
+	  var context = canvas.getContext("2d");
+	  context.fillStyle = "black";
+	  context.font = "17px Arial";
+	  // Draw vertical line
+	  context.fillText("180", 0, 20);
+	  context.strokeStyle = "red";
+	  context.beginPath();
+	  context.moveTo(180,0);
+	  context.lineTo(180,360);
+	  context.stroke();
+	  context.closePath();
+	  context.fillText("-180", 0, 355)
+	  context.fillText("0", 0, 198)
+	  
+	  // Draw horizontal line
+	  // y axis needs to be inverted 
+	  context.strokeStyle = "red";
+	  context.beginPath();  
+	  context.moveTo(0, 180);
+	  context.lineTo(360, 180);
+	  context.stroke();
+	  context.closePath();
+	  context.fillText("180", 330, 355 )
+	  context.fillText("0",185,355)
+	  return; 
+      }
+      
       function update_rama() {
 
 	  // Clear canvas to plot image
@@ -110,7 +218,9 @@
 	  background.src = "https://raw.githubusercontent.com/earacena/protein-collision-viewer/master/data/" + filename;
 	  background.onload = function() {
 	      context.drawImage(background, 0, 0);
+	      place_axis();
 	      // Draw vertical line
+	      context.strokeStyle = "black";
 	      context.beginPath();
 	      context.moveTo(180+phi, 0);
 	      context.lineTo(180+phi, 360);
@@ -133,7 +243,7 @@
       function update_clashes() {
 	  // To return the number of atoms in clash, use this script format:
 	  // x = contact({atomset1} {atomset2});set background [x*90, 0, 0]
-	  Jmol.script(jmolApplet0, 'contact delete;contact {oxygen or carbon or nitrogen} {oxygen or carbon or nitrogen};')
+	  Jmol.script(jmolApplet0, 'contact delete;contact {hydrogen or oxygen or carbon or nitrogen} {hydrogen or oxygen or carbon or nitrogen};')
 	  
 	  return;
       }
@@ -141,7 +251,7 @@
       function phi_rotate_plus() { 
 	  if (aminoAcid == "ala") {
 	      // Alanine
-	      Jmol.script(jmolApplet0, 'rotate MOLECULAR BRANCH (atomno = 7) (atomno = 1) -10 -30');
+	      Jmol.script(jmolApplet0, 'rotate MOLECULAR BRANCH (atomno = 7) (atomno = 4) -10 -30');
 	  } else if (aminoAcid == "ala-gly") {
 	      // ALA-GLY
 	      Jmol.script(jmolApplet0, 'rotate MOLECULAR BRANCH (atomno = 4) (atomno = 9) -10 -30');
@@ -161,7 +271,7 @@
       function phi_rotate_minus() {
 	  if (aminoAcid == "ala") {
 	      // Alanine
-	      Jmol.script(jmolApplet0, 'rotate MOLECULAR BRANCH (atomno = 7) (atomno = 1) 10 30');
+	      Jmol.script(jmolApplet0, 'rotate MOLECULAR BRANCH (atomno = 7) (atomno = 4) 10 30');
 	  } else if (aminoAcid == "ala-gly") {
 	      // ALA-GLY
 	      Jmol.script(jmolApplet0, 'rotate MOLECULAR BRANCH (atomno = 4) (atomno = 9) 10 30');
@@ -181,14 +291,14 @@
       function psi_rotate_plus() {
 	  if (aminoAcid == "ala") {
 	      // ALANINE
-	      Jmol.script(jmolApplet0, 'rotate MOLECULAR BRANCH (atomno = 7) (atomno = 5) 10 30');
+	      Jmol.script(jmolApplet0, 'rotate MOLECULAR BRANCH (atomno = 7) (atomno = 5) -10 -30');
 	  } else if (aminoAcid == "ala-gly") {
 	      // ALA-GLY
-	      Jmol.script(jmolApplet0, 'rotate MOLECULAR BRANCH (atomno = 4) (atomno = 7) 10 30');
+	      Jmol.script(jmolApplet0, 'rotate MOLECULAR BRANCH (atomno = 4) (atomno = 7) -10 -30');
 	  } else if (aminoAcid == "arg") {
-	      Jmol.script(jmolApplet0, 'rotate MOLECULAR BRANCH (atomno = 7) (atomno = 5) 10 30');
+	      Jmol.script(jmolApplet0, 'rotate MOLECULAR BRANCH (atomno = 7) (atomno = 5) -10 -30');
 	  } else if (aminoAcid == "gly") {
-	      Jmol.script(jmolApplet0, 'rotate MOLECULAR BRANCH (atomno = 7) (atomno = 5) 10 30');
+	      Jmol.script(jmolApplet0, 'rotate MOLECULAR BRANCH (atomno = 7) (atomno = 5) -10 -30');
 	  }
 	  psi = psi + 10;
 	  psi = normalize(psi);
@@ -199,14 +309,14 @@
       function psi_rotate_minus() {
 	  if (aminoAcid == "ala") {
 	      // ALANINE
-	      Jmol.script(jmolApplet0, 'rotate MOLECULAR BRANCH (atomno = 7) (atomno = 5) -10 -30');
+	      Jmol.script(jmolApplet0, 'rotate MOLECULAR BRANCH (atomno = 7) (atomno = 5) 10 30');
 	  } else if (aminoAcid == "ala-gly") {
 	      // ALA-GLY
-	      Jmol.script(jmolApplet0, 'rotate MOLECULAR BRANCH (atomno = 4) (atomno = 7) -10 -30');
+	      Jmol.script(jmolApplet0, 'rotate MOLECULAR BRANCH (atomno = 4) (atomno = 7) 10 30');
 	  } else if (aminoAcid == "arg") {
-	      Jmol.script(jmolApplet0, 'rotate MOLECULAR BRANCH (atomno = 7) (atomno = 5) -10 -30');
+	      Jmol.script(jmolApplet0, 'rotate MOLECULAR BRANCH (atomno = 7) (atomno = 5) 10 30');
 	  } else if (aminoAcid == "gly") {
-	      Jmol.script(jmolApplet0, 'rotate MOLECULAR BRANCH (atomno = 7) (atomno = 5) -10 -30');
+	      Jmol.script(jmolApplet0, 'rotate MOLECULAR BRANCH (atomno = 7) (atomno = 5) 10 30');
 	  } 
 	  psi = psi - 10;
 	  psi = normalize(psi);
@@ -243,6 +353,16 @@
 	  return aminoAcid;
       }
 
+      function toggle_vdw() {
+	  var checkbox = document.getElementById("vdw_checkbox");
+	  if (checkbox.checked == true) {
+	      Jmol.script(jmolApplet0, 'isoSurface solvent;color isoSurface translucent');
+	  } else {
+	      Jmol.script(jmolApplet0, 'isoSurface off');
+	      update_clashes();
+	  }
+      }
+
       $(document).ready(function() {
 	  $("#appdiv").html(Jmol.getAppletHtml("jmolApplet0", Info))
       })
@@ -251,147 +371,109 @@
 
 
 
+
     </script>
   </head>
-  
-<style>
-.flex-container {
-  display: flex;
-  justify-content: center;
-}
+<body onload="load_rama();update_rama();">
 
+    <center><font size="6"><b> Amino Acid Collision Viewer with live Ramachandran plot. </b> </font></center>
+    <center>
+    <div class = "plotBox">
+			<div>
+			  <h2 style = "color : black;">Ramachandran plot:</h2>
+			  <canvas width=360 height=360 id="ramacanvas"></canvas>
+			</div>
+			<div class = "LabelPhi">
+				<p><b>Phi (&deg)</b></p>
+			</div>
+			<div class = "LabelPsi">
+				<p><b>Psi (&deg)</b></p>
+			</div>
+	</div>
+	<div id="appdiv"></div>
+	<div>
+	  <h2 style = "color : black;">Amino Acid:</h2>
+	  <select id="menu">
+	    <option value = "ala">Alanine (ALA)</option> 
+	    <option value = "gly">Glycine (GLY)</option>
+	  </select>
+	  <button onclick="load_molecule();">Load</button>
 
-legend { 
-  display: block;
-  padding-left: 2px;
-  padding-right: 2px;
-  border: none;
-}
+	  <br><br><input type="checkbox" id="vdw_checkbox" onclick="toggle_vdw();"> Enable Van der Waals<br> 
 
-fieldset {
-    background-color:  #beffb5;
-    border:  1px solid #ccc;
-    margin:  2em 0;
-    padding:  1em;
-}
-      
+	  <h2 style ="color : black;">Phi Rotation:</h2>
+	  <button onclick="phi_rotate_plus();update_clashes();update_rama();">+ 10</button>
+	  <button onclick="phi_rotate_minus();update_clashes();update_rama();">- 10</button>
+	  <p> Current degree : </p> <p id ="phi">0</p>
+	  
+	  
+	  
+	  <h2 style ="color : black;">Psi Rotation: </h2>
+	  <button onclick="psi_rotate_plus();update_clashes();update_rama();">+ 10</button>
+	  <button onclick="psi_rotate_minus();update_clashes();update_rama();">- 10</button>
+	  <p> Current degree : </p> <p id="psi">-90</p>
 
-</style>
-  <body onload="load_rama();update_rama();">
-
-    
-
-    <center><font size="10"> Amino Acid Collision Viewer with Live Ramachandran Plot </font></center>
-    <div style="font-size:130%;text-align:center;font-weight:bold;"> Phi (φ) and Psi (ψ) Angles in Proteins </div>
-     <center><font size="4"> Authors:  </font></center>
-     <br></br>
-
-
-    
-    
-  <div class = "flex-container">
-   
-<fieldset>
-  <p><b>
-  <span style='color: blue'>L</span>
-  <span style='color: red'>e</span>
-  <span style='color: green'>g</span>
-  <span style='color: blue'>e</span>
-  <span style='color: green'>n</span>
-  <span style='color: red'>d</span>
-    </b><p>
-
-    
-  <font color = red>Red Molcule: Oxygen </font><br>
-  <font color = blue>Blue Molcule : Nitrogen </font><br>
-  <font color = white>White Molcule: Hydrogen </font><br>
-  <font color = grey>Grey Molcule : Calcium </font><br>
-
-  <p><b>
-  <p style='color: blue'>R</span>
-  <span style='color: red'>a</span>
-  <span style='color: green'>m</span>
-  <span style='color: blue'>a</span>
-  <span style='color: green'>c</span>
-  <span style='color: red'>h</span>
-  <span style='color: blue'>a</span>
-  <span style='color: red'>n</span>
-  <span style='color: green'>d</span>
-  <span style='color: blue'>r</span>
-  <span style='color: green'>a</span>
-  <span style='color: red'>n</span>
-  </b><p>
-  <font color = white> White Space = collison </font><br>
-  <font color = grey> Grey Space = no collison </font><br>
-
-  
-</fieldset>
-
-     <div id="appdiv"></div> 
-      <pre> </pre>            
-      
-      <canvas width=360 height=360 id="ramacanvas"></canvas>
-
+	</div>
+      </div>
+     <div class = "legend">
+    <p> <b> Key </b> <br>
+    	<u>Ramachandran Plot:</u> <br>
+    	<svg width="15" height="15"> <rect width="15" height="15" style="fill:#7F8C8D" /> </svg> 
+    	A position with no major collision of atoms <br>
+    	<svg width="15" height="15"> <rect width="15" height="15" style="fill:#FDFEFE; stroke-width:2;stroke:rgb(0,0,0)"/> </svg>
+    	Positions with collisions of atoms <br> <br>
+    	<u>Molecule Model:</u> <br>
+    	<svg height="14" width="14"> <circle cx="7" cy="7" r="7" fill="red" /></svg>
+    	Oxygen
+    	<svg height="14" width="14"> <circle cx="7" cy="7" r="7" fill="blue" /></svg>
+    	Nitrogen 
+    	<svg height="14" width="14"> <circle cx="7" cy="7" r="7" style="fill:#7F8C8D" /></svg>
+    	Carbon
+    	<svg height="14" width="14"> <circle cx="7" cy="7" r="7" stroke="black" stroke-width="1" fill="white" /></svg>
+    	Hydrogen
+    </p>
+    </div>
+      <div class=div1>
+    </center>
+    <br>
+    <br>
+    <center>
+      <div class="tab">
+	<button class="tablink" onclick="open_tab(event, 'TabA')">About this Simulation</button>
+	<button class="tablink" onclick="open_tab(event, 'TabB')">Background</button>
+	<button class="tablink" onclick="open_tab(event, 'TabC')">References/Resources</button>
       </div>
 
+      <div id="TabA" class="tabcontent">
+	<p><emsp>This is a simulation of an amino acid and its respective Ramachandran plot. The rotations of
+	the dihedral angles can be changed by pressing the buttons on the right of the 3D simulations. Any changes made to the angle will also be made on the Ramachandran plot to the left of the simulation. The intersection of the black lines identifies the position on the plot the rotations are currently corresponding to. The white area being points of overlap and instability and the grey colored zones being possible conformations of the molecule. The large yellow to red discs identify that there is an overlap in the atoms. The larger the circle the more cross-sectional overlap and the color will get darker. Thus, the optimal orientation is with the smallest circles which represent little to no overlap of atoms in the molecule. We hope that this will help the user visualize the Ramachandran plot more effectively!
+	</p>
+      </div>
 
-      <center>
-      <h2 style = "color : black;">Amino Acid:</h2>
-        <select id="menu">
-	        <option value = "ala">Alanine (ALA)</option> 
-	        <option value = "ala-gly">Alanine-Glycine (ALA-GLY)</option>
-	        <option value = "arg">Arginine</option>
-	        <option value = "gly">Glycine (GLY)</option>
-        </select>
-      <button onclick="load_molecule();">Load</button>
-      </center>
-     <br></br>
+      <div id="TabB" class="tabcontent">
+	<p><emsp>Proteins are one of the fundamental biomolecules in biochemistry and important to fully comprehend in various fields. All proteins produce a recurring shape when they begin to fold after forming a long chain of amino acids. These shapes are an alpha helix (a spiral) or a beta sheet (a zig zag pattern). When trying to study the reason behind proteins making these shapes G.N. Ramachandran made a simple computational experiment which made the first Ramachandran plot. In the experiment every combination of degree change of the dihedral angles (represented by phi and psi) was tested to check if the atoms in the molecule were overlapping. The overlap of atoms is very unstable and thus it is unfavorable for a molecule to conform that way. Thus, in the Ramachandran plot there are various dark points which indicate the presence of an agreeable conformation for the molecule to take. This was a historic discovery for not only explaining a prevalent phenomenon but also with a simple solution.</p> 
+      </div>
 
-
-
-
-  <div class = "flex-container">
-       
-      <font size="4"> Phi Rotation: </font>
-      <button onclick="phi_rotate_plus();update_clashes();update_rama();">+ 10</button>
-      <button onclick="phi_rotate_minus();update_clashes();update_rama();">- 10</button>
+      <div id="TabC" class="tabcontent">
+	<p>I haven't done the citations yet, but credit will be given wherever it is due!</p>
+      </div>
       
-      <pre> </pre>
-      
-      <font size="4"> Psi Rotation: </font>      
-      <button onclick="psi_rotate_plus();update_clashes();update_rama();">+ 10</button>
-      <button onclick="psi_rotate_minus();update_clashes();update_rama();">- 10</button>
-      
-
-
-  </div>
-
-
-
-
-  <div class = "flex-container">
-    <p> Current degree : </p><pre> </pre> <p id ="phi">0</p>
-      <pre> </pre>
-      <pre> </pre>
-      <pre> </pre>
-      <pre> </pre>
-      <pre> </pre>
-      <pre> </pre>
-      <pre> </pre>
-      <pre> </pre>
-      <pre> </pre>
-    <p> Current degree : </p> <pre></pre>  <p id="psi">0</p>
-
-  </div>
-
-
-
-
+      <script>
+	function open_tab(event, tabname) {
+	    var i, tabcontent, tablink;
+	    tabcontent = document.getElementsByClassName("tabcontent");
+	    for (i = 0; i < tabcontent.length; i++) {
+		tabcontent[i].style.display = "none";
+	    }
+	    tablink = document.getElementsByClassName("tablink");
+	    for (i = 0; i < tablink.length; i++) {
+		tablink[i].className = tablink[i].className.replace(" active", "");
+	    }
+	    document.getElementById(tabname).style.display = "block";
+	    event.currentTarget.className += " active";
+	}
+      </script> 
+    </center>
 
   </body>
 </html>
-
-
-
-
-
